@@ -3,6 +3,7 @@ package goit.ua;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,15 +40,27 @@ public class TimeServlet extends HttpServlet {
 
         templateEngine = new TemplateEngine();
         templateEngine.setTemplateResolver(templateResolver);
+
+
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
         String time = (String) req.getAttribute("validatedTimezone");
 
-        if (time == null) {
-            time = req.getParameter("timezone");
+        if (time == null || time.isEmpty()) {
+            Cookie[] cookies = req.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if ("lastTimezone".equals(cookie.getName())) {
+                        time = cookie.getValue();
+                    }
+                }
+            }
+        } else {
+            Cookie cookie = new Cookie("lastTimezone", time.replace(" ", "+"));
+            cookie.setMaxAge(60 * 60 * 24); // 24 години
+            resp.addCookie(cookie);
         }
 
         ZonedDateTime zonedDateTime;
